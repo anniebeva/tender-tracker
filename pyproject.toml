@@ -1,0 +1,26 @@
+[project]
+name = "tender-tracker"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "anniebeva",email = "anniebeva@gmail.com"}
+]
+requires-python = ">=3.11"
+dependencies = [
+    "django (>=5.2,<5.3)",
+    "djangorestframework (>=3.18.0,<4.0.0)",
+    "psycopg[binary] (>=3.3.4,<4.0.0)",
+    "drf-spectacular (>=0.30.0,<0.31.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-django (>=4.14.0,<5.0.0)"
+]
