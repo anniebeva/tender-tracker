@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -41,6 +42,7 @@ class TenderDetailView(APIView):
     """Retrieve a tender with its status history"""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = TenderDetailSerializer
 
     @extend_schema(
         responses=TenderDetailSerializer,
@@ -59,6 +61,7 @@ class TenderStatusUpdateView(APIView):
     """Update tender status"""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = TenderStatusUpdateSerializer
 
     @extend_schema(
         request=TenderStatusUpdateSerializer,
@@ -72,11 +75,17 @@ class TenderStatusUpdateView(APIView):
         serializer = TenderStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tender = change_tender_status(
-            tender=tender,
-            new_status=serializer.validated_data["status"],
-            changed_by=request.user,
-            reason=serializer.validated_data["reason"],
-        )
+        try:
+            tender = change_tender_status(
+                tender=tender,
+                new_status=serializer.validated_data["status"],
+                changed_by=request.user,
+                reason=serializer.validated_data["reason"],
+            )
+        except ValidationError as exc:
+            return Response(
+                {"detail": str(exc.message)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(TenderSerializer(tender).data)

@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
 
 
 @pytest.fixture
@@ -12,3 +13,10 @@ def user():
         username="testuser",
         password="testpassword",
     )
+
+
+@pytest.fixture
+def api_client():
+    """Create API client"""
+
+    return APIClient()
