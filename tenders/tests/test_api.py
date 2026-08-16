@@ -161,3 +161,164 @@ class TestTenderAPI:
 
         assert tender.status == TenderStatus.DRAFT
         assert TenderStatusHistory.objects.count() == 0
+
+    def test_create_tender_requires_title(self, api_client, user):
+        """Test tender creation requires title"""
+
+        api_client.force_authenticate(user=user)
+
+        response = api_client.post(
+            "/api/tenders/",
+            {
+                "description": "Test description",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "title" in response.data
+
+    def test_create_tender_rejects_empty_title(self, api_client, user):
+        """Test tender creation rejects empty title"""
+
+        api_client.force_authenticate(user=user)
+
+        response = api_client.post(
+            "/api/tenders/",
+            {
+                "title": "",
+                "description": "Test description",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "title" in response.data
+
+    def test_update_status_requires_reason(self, api_client, user):
+        """Test tender status update requires reason"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.ACTIVE,
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "reason" in response.data
+
+    def test_get_nonexistent_tender(self, api_client, user):
+        """Test retrieval of nonexistent tender"""
+
+        api_client.force_authenticate(user=user)
+
+        response = api_client.get("/api/tenders/999999/")
+
+        assert response.status_code == 404
+
+    def test_update_nonexistent_tender(self, api_client, user):
+        """Test status update for nonexistent tender"""
+
+        api_client.force_authenticate(user=user)
+
+        response = api_client.patch(
+            "/api/tenders/999999/status/",
+            {
+                "status": TenderStatus.ACTIVE,
+                "reason": "Tender published",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 404
+
+    def test_active_tender_can_be_won(self, api_client, user):
+        """Test active tender can be marked as won"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+            status=TenderStatus.ACTIVE,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.WON,
+                "reason": "Tender won",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 200
+
+        tender.refresh_from_db()
+
+        assert tender.status == TenderStatus.WON
+
+    def test_active_tender_can_be_lost(self, api_client, user):
+        """Test active tender can be marked as lost"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+            status=TenderStatus.ACTIVE,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.LOST,
+                "reason": "Tender lost",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 200
+
+        tender.refresh_from_db()
+
+        assert tender.status == TenderStatus.LOST
+
+    def test_won_tender_cannot_change_status(self, api_client, user):
+        """Test won tender cannot change status"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+            status=TenderStatus.WON,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.LOST,
+                "reason": "Try to change completed tender",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+
+        tender.refresh_from_db()
+
+        assert tender.status == TenderStatus.WON
