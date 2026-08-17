@@ -50,9 +50,16 @@ class TenderListView(ListAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        """Return tenders ordered by creation date"""
+        """Return tenders filtered by status and ordered by creation date"""
 
-        return Tender.objects.all().order_by("-created_at")
+        queryset = Tender.objects.all().order_by("-created_at")
+
+        status_filter = self.request.query_params.get("status")
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset
 
 
 class TenderDetailView(APIView):

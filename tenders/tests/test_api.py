@@ -352,3 +352,28 @@ class TestTenderAPI:
         response = api_client.get("/api/tenders/list/")
 
         assert response.status_code == 401
+
+    def test_get_tenders_by_status(self, api_client, user):
+        """Test tender list filtering by status"""
+
+        api_client.force_authenticate(user=user)
+
+        Tender.objects.create(
+            title="Draft tender",
+            description="Draft description",
+            created_by=user,
+        )
+
+        active_tender = Tender.objects.create(
+            title="Active tender",
+            description="Active description",
+            created_by=user,
+            status=TenderStatus.ACTIVE,
+        )
+
+        response = api_client.get("/api/tenders/list/?status=active")
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["id"] == active_tender.id
+        assert response.data[0]["status"] == TenderStatus.ACTIVE
