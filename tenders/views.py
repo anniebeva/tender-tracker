@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 
 from .models import Tender
 from .serializers import (
@@ -36,6 +37,22 @@ class TenderCreateView(APIView):
             TenderSerializer(tender).data,
             status=status.HTTP_201_CREATED,
         )
+class TenderListView(ListAPIView):
+    """Retrieve a list of tenders"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = TenderSerializer
+
+    @extend_schema(responses=TenderSerializer(many=True),)
+    def get(self, request, *args, **kwargs):
+        """Handle tender list request"""
+
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        """Return tenders ordered by creation date"""
+
+        return Tender.objects.all().order_by("-created_at")
 
 
 class TenderDetailView(APIView):
@@ -44,9 +61,7 @@ class TenderDetailView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = TenderDetailSerializer
 
-    @extend_schema(
-        responses=TenderDetailSerializer,
-    )
+    @extend_schema(responses=TenderDetailSerializer,)
     def get(self, request, pk):
         """Handle tender retrieval request"""
 

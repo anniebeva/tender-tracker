@@ -322,3 +322,33 @@ class TestTenderAPI:
         tender.refresh_from_db()
 
         assert tender.status == TenderStatus.WON
+
+    def test_get_tenders(self, api_client, user):
+        """Test tender list retrieval"""
+
+        api_client.force_authenticate(user=user)
+
+        Tender.objects.create(
+            title="First tender",
+            description="First description",
+            created_by=user,
+        )
+        Tender.objects.create(
+            title="Second tender",
+            description="Second description",
+            created_by=user,
+        )
+
+        response = api_client.get("/api/tenders/list/")
+
+        assert response.status_code == 200
+        assert len(response.data) == 2
+        assert response.data[0]["title"] == "Second tender"
+        assert response.data[1]["title"] == "First tender"
+
+    def test_get_tenders_requires_authentication(self, api_client):
+        """Test tender list requires authentication"""
+
+        response = api_client.get("/api/tenders/list/")
+
+        assert response.status_code == 401
