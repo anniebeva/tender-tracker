@@ -81,6 +81,33 @@ class TestTenderAPI:
         assert history.changed_by == user
         assert history.reason == "Tender published"
 
+    def test_update_status_rejects_invalid_status(self, api_client, user):
+        """Test tender status update rejects invalid status"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": "invalid",
+                "reason": "Invalid status",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+
+        tender.refresh_from_db()
+
+        assert tender.status == TenderStatus.DRAFT
+        assert TenderStatusHistory.objects.count() == 0
+
     def test_get_tender_with_status_history(self, api_client, user):
         """Test tender retrieval with status history"""
 
@@ -323,6 +350,34 @@ class TestTenderAPI:
 
         assert tender.status == TenderStatus.WON
 
+
+    def test_lost_tender_cannot_change_status(self, api_client, user):
+        """Test lost tender cannot change status"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+            status=TenderStatus.LOST,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.WON,
+                "reason": "Try to change completed tender",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+
+        tender.refresh_from_db()
+
+        assert tender.status == TenderStatus.LOST
+
     def test_get_tenders(self, api_client, user):
         """Test tender list retrieval"""
 
@@ -345,6 +400,53 @@ class TestTenderAPI:
         assert len(response.data) == 2
         assert response.data[0]["title"] == "Second tender"
         assert response.data[1]["title"] == "First tender"
+
+    def test_status_changes_are_logged(self, api_client, user):
+        """Test every status change is logged in history"""
+
+        api_client.force_authenticate(user=user)
+
+        tender = Tender.objects.create(
+            title="Test tender",
+            description="Test description",
+            created_by=user,
+        )
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.ACTIVE,
+                "reason": "Tender published",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 200
+
+        response = api_client.patch(
+            f"/api/tenders/{tender.id}/status/",
+            {
+                "status": TenderStatus.WON,
+                "reason": "Tender won",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 200
+
+        history = TenderStatusHistory.objects.filter(tender=tender).order_by("id")
+
+        assert history.count() == 2
+
+        assert history[0].old_status == TenderStatus.DRAFT
+        assert history[0].new_status == TenderStatus.ACTIVE
+        assert history[0].reason == "Tender published"
+        assert history[0].changed_by == user
+
+        assert history[1].old_status == TenderStatus.ACTIVE
+        assert history[1].new_status == TenderStatus.WON
+        assert history[1].reason == "Tender won"
+        assert history[1].changed_by == user
 
     def test_get_tenders_requires_authentication(self, api_client):
         """Test tender list requires authentication"""
