@@ -1,12 +1,11 @@
 from django.urls import path
 
-from .views import(
+from .views import (
     TenderCreateView,
     TenderDetailView,
-    TenderStatusUpdateView,
     TenderListView,
+    TenderStatusUpdateView,
 )
-
 
 urlpatterns = [
     path("", TenderCreateView.as_view(), name="tender-create"),

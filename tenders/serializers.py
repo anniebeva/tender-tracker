@@ -51,6 +51,7 @@ class TenderStatusHistorySerializer(serializers.ModelSerializer):
             "changed_at",
         )
 
+
 class TenderDetailSerializer(TenderSerializer):
     """Serialize tender with status history"""
 

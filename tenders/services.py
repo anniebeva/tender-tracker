@@ -3,7 +3,6 @@ from django.db import transaction
 
 from .models import Tender, TenderStatus, TenderStatusHistory
 
-
 ALLOWED_STATUS_TRANSITIONS = {
     TenderStatus.DRAFT: {TenderStatus.ACTIVE},
     TenderStatus.ACTIVE: {TenderStatus.WON, TenderStatus.LOST},

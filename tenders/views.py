@@ -1,11 +1,11 @@
-from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
 
 from .models import Tender
 from .serializers import (
@@ -37,13 +37,17 @@ class TenderCreateView(APIView):
             TenderSerializer(tender).data,
             status=status.HTTP_201_CREATED,
         )
+
+
 class TenderListView(ListAPIView):
     """Retrieve a list of tenders"""
 
     permission_classes = [IsAuthenticated]
     serializer_class = TenderSerializer
 
-    @extend_schema(responses=TenderSerializer(many=True),)
+    @extend_schema(
+        responses=TenderSerializer(many=True),
+    )
     def get(self, request, *args, **kwargs):
         """Handle tender list request"""
 
@@ -68,7 +72,9 @@ class TenderDetailView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = TenderDetailSerializer
 
-    @extend_schema(responses=TenderDetailSerializer,)
+    @extend_schema(
+        responses=TenderDetailSerializer,
+    )
     def get(self, request, pk):
         """Handle tender retrieval request"""
 

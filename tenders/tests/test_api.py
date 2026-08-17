@@ -350,7 +350,6 @@ class TestTenderAPI:
 
         assert tender.status == TenderStatus.WON
 
-
     def test_lost_tender_cannot_change_status(self, api_client, user):
         """Test lost tender cannot change status"""
 
